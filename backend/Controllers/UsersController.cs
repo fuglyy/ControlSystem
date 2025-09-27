@@ -15,6 +15,7 @@ public class UsersController : ControllerBase
 
     // Получить список всех пользователей
     [HttpGet]
+    [Authorize(Roles = "Manager, Director")]
     public async Task<IActionResult> GetAll()
     {
         var users = await _userService.GetAsync();
@@ -29,7 +30,6 @@ public class UsersController : ControllerBase
         return user == null ? NotFound() : Ok(new { user.Id, user.Username, user.Role });
     }
 
-    // Можно добавить смену роли (только для менеджера/админа)
     [HttpPut("{id}/role")]
     [Authorize(Roles = "Manager")]
     public async Task<IActionResult> ChangeRole(string id, [FromBody] ChangeRoleRequest req)

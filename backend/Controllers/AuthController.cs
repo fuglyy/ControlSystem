@@ -3,20 +3,23 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+
 
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase {
     private readonly UserService _userService;
-    private readonly IConfigurations _config;
+    private readonly IConfiguration _config;
 
-    public AuthController(UserService userService, IConfigurations config){
+    public AuthController(UserService userService, IConfiguration config){
         _userService = userService;
         _config = config;
     }
 
     [HttpPost("register")]
-    public asyncTask<IActionResult> Register([FromBody] RegisterRequest req){
+    public async Task<IActionResult> Register([FromBody] RegisterRequest req){
         var exists = await _userService.GetByUsernameAsync(req.Username);
         if (exists != null) return BadRequest("User exists");
 

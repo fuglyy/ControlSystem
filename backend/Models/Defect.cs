@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 
 public class Defect
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = null!;
+[BsonId] // ключ документа
+    [BsonRepresentation(BsonType.ObjectId)] // чтобы хранить в виде ObjectId
+    public string? Id { get; set; }
 
     [Required]
     public string Title { get; set; }

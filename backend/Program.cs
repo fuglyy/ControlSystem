@@ -14,6 +14,8 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<DefectService>();
+builder.Services.AddSingleton<ProjectService>();
+
 
 var key = builder.Configuration["Jwt:Key"];
 builder.Services.AddAuthentication(options =>
@@ -44,9 +46,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpRedirection();
+app.UseHttpsRedirection();
 app.UseAuthentication();
-app.UseAUthorization();
+app.UseAuthorization();
 
 app.MapControllers();
 

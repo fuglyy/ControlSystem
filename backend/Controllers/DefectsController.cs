@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -23,6 +24,7 @@ public class DefectsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Engineer")]
     public async Task<IActionResult> Create([FromBody] Defect d)
     {
         await _defectService.CreateAsync(d);
