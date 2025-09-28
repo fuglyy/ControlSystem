@@ -26,7 +26,7 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Manager,Admin")] // только менеджеры/руководители могут создавать
+    [Authorize(Roles = "Manager,Admin")] 
     public async Task<IActionResult> Create(Project project)
     {
         await _service.CreateAsync(project);

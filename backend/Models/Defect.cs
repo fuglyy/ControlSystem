@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 public class Defect
 {
 [BsonId] // ключ документа
-    [BsonRepresentation(BsonType.ObjectId)] // чтобы хранить в виде ObjectId
+    [BsonRepresentation(BsonType.ObjectId)] 
     public string? Id { get; set; }
 
     [Required]
@@ -13,11 +13,13 @@ public class Defect
 
     public string Description { get; set; }
 
-    public string Priority { get; set; } = "Medium"; // Low, Medium, High
+    public string Priority { get; set; } = "Medium"; 
 
-    public string Status { get; set; } = "New"; // New, InWork, Review, Closed, Cancelled
+    public string Status { get; set; } = "New"; 
 
     public string? AssignedToId { get; set; }
+    
+     public string? ProjectId { get; set; } 
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -13,13 +13,15 @@ public class DefectsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Engineer,Manager,Director")]
     public async Task<IActionResult> List() =>
-        Ok(await _defectService.GetAsync());
+        Ok(await _defectService.GetAllAsync());
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Engineer,Manager,Director")]
     public async Task<IActionResult> Get(string id)
     {
-        var d = await _defectService.GetAsync(id);
+        var d = await _defectService.GetByIdAsync(id);
         return d == null ? NotFound() : Ok(d);
     }
 
@@ -29,5 +31,26 @@ public class DefectsController : ControllerBase
     {
         await _defectService.CreateAsync(d);
         return CreatedAtAction(nameof(Get), new { id = d.Id }, d);
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Engineer,Manager")]
+    public async Task<IActionResult> Update(string id, [FromBody] Defect d)
+    {
+        var exists = await _defectService.GetByIdAsync(id);
+        if (exists == null) return NotFound();
+
+        d.Id = id; 
+        var ok = await _defectService.UpdateAsync(id, d);
+        return ok ? NoContent() : StatusCode(500);
+    }
+
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        var ok = await _defectService.DeleteAsync(id);
+        return ok ? NoContent() : NotFound();
     }
 }

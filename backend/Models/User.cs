@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 public class User{
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = null!;
+    public string? Id { get; set; } = null!;
 
     [Required]
     public string Username { get; set; }

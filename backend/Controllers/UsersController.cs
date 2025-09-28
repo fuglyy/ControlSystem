@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // все действия требуют авторизации
+[Authorize] 
 public class UsersController : ControllerBase
 {
     private readonly UserService _userService;
@@ -24,6 +24,7 @@ public class UsersController : ControllerBase
 
     // Получить конкретного пользователя по ID
     [HttpGet("{id}")]
+    [Authorize(Roles = "Manager,Engineer,Director")]
     public async Task<IActionResult> GetById(string id)
     {
         var user = await _userService.GetByIdAsync(id);

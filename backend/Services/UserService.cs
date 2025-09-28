@@ -26,7 +26,10 @@ public class UserService
     public async Task<User?> GetByIdAsync(string id) =>
         await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
 
-    public async Task UpdateAsync(User user) =>
-        await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
+    public async Task<bool> UpdateAsync(User user)
+    {
+        var result = await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
+        return result.ModifiedCount > 0;
+    }
 
 }
