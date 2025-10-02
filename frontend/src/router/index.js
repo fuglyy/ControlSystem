@@ -20,11 +20,11 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
+/*router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.token) {
     return "/login";
   }
-});
+});*/
 
 export default router;
