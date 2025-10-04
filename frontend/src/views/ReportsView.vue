@@ -27,29 +27,56 @@
     </div>
     
     <div class="charts-section">
-      <div class="chart-card">
+      <div class="chart-card full-width">
         <div class="card-header">
-          <h2>Статистика проектов</h2>
+          <h2>Динамика дефектов</h2>
+          <span class="chart-period">Последние 7 дней</span>
         </div>
-        <div class="chart-placeholder">
-          <div class="chart-info">
-            <div class="chart-icon">📊</div>
-            <p>Здесь будет график статистики проектов</p>
-            <p class="chart-hint">Интеграция с библиотекой графиков в разработке</p>
-          </div>
+        <div class="chart-content">
+          <LineChart
+            :data="defectsTrendData"
+            :width="chartWidth"
+            :height="300"
+            color="#667eea"
+          />
         </div>
       </div>
       
       <div class="chart-card">
         <div class="card-header">
-          <h2>Динамика дефектов</h2>
+          <h2>Дефекты по статусам</h2>
         </div>
-        <div class="chart-placeholder">
-          <div class="chart-info">
-            <div class="chart-icon">📈</div>
-            <p>Здесь будет график динамики дефектов</p>
-            <p class="chart-hint">Интеграция с библиотекой графиков в разработке</p>
-          </div>
+        <div class="chart-content">
+          <PieChart
+            :data="defectsByStatusData"
+            :size="220"
+          />
+        </div>
+      </div>
+      
+      <div class="chart-card">
+        <div class="card-header">
+          <h2>Дефекты по приоритетам</h2>
+        </div>
+        <div class="chart-content">
+          <BarChart
+            :data="defectsByPriorityData"
+            :width="chartWidth / 2 - 20"
+            :height="300"
+          />
+        </div>
+      </div>
+      
+      <div class="chart-card full-width">
+        <div class="card-header">
+          <h2>Дефекты по проектам</h2>
+        </div>
+        <div class="chart-content">
+          <BarChart
+            :data="defectsByProjectData"
+            :width="chartWidth"
+            :height="300"
+          />
         </div>
       </div>
     </div>
@@ -57,7 +84,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import PieChart from '../components/PieChart.vue';
+import BarChart from '../components/BarChart.vue';
+import LineChart from '../components/LineChart.vue';
+
+const chartWidth = ref(800);
 
 const reports = ref([
   {
@@ -90,10 +122,55 @@ const reports = ref([
   }
 ]);
 
+const defectsByStatusData = ref([
+  { label: 'Открыт', value: 12, color: '#ef4444' },
+  { label: 'В работе', value: 18, color: '#3b82f6' },
+  { label: 'На проверке', value: 8, color: '#f59e0b' },
+  { label: 'Закрыт', value: 25, color: '#10b981' }
+]);
+
+const defectsByPriorityData = ref([
+  { label: 'Высокий', value: 15, color: '#ef4444' },
+  { label: 'Средний', value: 28, color: '#f59e0b' },
+  { label: 'Низкий', value: 20, color: '#3b82f6' }
+]);
+
+const defectsByProjectData = ref([
+  { label: 'CRM', value: 22, color: '#667eea' },
+  { label: 'Веб-портал', value: 18, color: '#f59e0b' },
+  { label: 'Мобильное', value: 12, color: '#10b981' },
+  { label: 'Аналитика', value: 11, color: '#3b82f6' }
+]);
+
+const defectsTrendData = ref([
+  { label: 'Пн', value: 8 },
+  { label: 'Вт', value: 12 },
+  { label: 'Ср', value: 10 },
+  { label: 'Чт', value: 15 },
+  { label: 'Пт', value: 18 },
+  { label: 'Сб', value: 14 },
+  { label: 'Вс', value: 11 }
+]);
+
 const viewReport = (report) => {
-  console.log('Просмотр отчёта:', report);
-  // Здесь можно добавить логику открытия детального отчёта
+  console.log('[v0] Просмотр отчёта:', report);
 };
+
+const updateChartWidth = () => {
+  const container = document.querySelector('.charts-section');
+  if (container) {
+    chartWidth.value = container.offsetWidth - 80;
+  }
+};
+
+onMounted(() => {
+  updateChartWidth();
+  window.addEventListener('resize', updateChartWidth);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateChartWidth);
+});
 </script>
 
 <style scoped>

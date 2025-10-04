@@ -2,10 +2,10 @@
   <div class="defects-page">
     <div class="page-header">
       <div class="header-content">
-        <h1>Дефекты</h1>
+        <h1>🐛 Дефекты</h1>
         <p class="header-subtitle">Отслеживание и управление дефектами</p>
       </div>
-      <button class="add-button">
+      <button class="add-button" @click="openAddModal" v-if="canCreate">
         <span class="button-icon">+</span>
         <span>Добавить дефект</span>
       </button>
@@ -52,7 +52,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="defect in filteredDefects" :key="defect.id" class="defect-row">
+          <tr 
+            v-for="defect in filteredDefects" 
+            :key="defect.id" 
+            class="defect-row"
+            @click="viewDefect(defect.id)"
+          >
             <td class="defect-id">#{{ defect.id }}</td>
             <td>
               <div class="priority-badge" :class="defect.priority">
@@ -82,18 +87,51 @@
       </table>
       
       <div v-if="filteredDefects.length === 0" class="empty-state">
+        <div class="empty-icon">🐛</div>
         <p>Дефекты не найдены</p>
       </div>
     </div>
+
+    <AddDefectModal
+      :is-open="showAddModal"
+      :projects="projects"
+      :users="users"
+      @close="showAddModal = false"
+      @submit="handleDefectSubmit"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useAuthStore } from '../store/auth';
+import { useRouter } from 'vue-router';
+import AddDefectModal from '../components/AddDefectModal.vue';
 
+const auth = useAuthStore();
+const router = useRouter();
 const searchQuery = ref('');
 const statusFilter = ref('');
 const priorityFilter = ref('');
+const showAddModal = ref(false);
+
+const canCreate = computed(() => true);
+
+
+const projects = ref([
+  { id: 1, name: 'CRM Система' },
+  { id: 2, name: 'Веб-портал' },
+  { id: 3, name: 'Мобильное приложение' },
+  { id: 4, name: 'Аналитическая система' }
+]);
+
+const users = ref([
+  { id: 1, name: 'Иван Петров' },
+  { id: 2, name: 'Мария Сидорова' },
+  { id: 3, name: 'Алексей Иванов' },
+  { id: 4, name: 'Дмитрий Смирнов' },
+  { id: 5, name: 'Екатерина Волкова' }
+]);
 
 const defects = ref([
   {
@@ -168,6 +206,44 @@ const getPriorityText = (priority) => {
     'low': 'Низкий'
   };
   return priorityTexts[priority] || priority;
+};
+
+const openAddModal = () => {
+  showAddModal.value = true;
+};
+
+const handleDefectSubmit = async (defectData) => {
+  console.log('[v0] Submitting defect:', defectData);
+  
+  try {
+    // TODO: Replace with actual API call
+    // const response = await fetch('/api/defects', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(defectData)
+    // });
+    
+    // Mock: Add to local array
+    const newDefect = {
+      id: defects.value.length + 1,
+      description: defectData.title,
+      project: projects.value.find(p => p.id === defectData.projectId)?.name || 'Неизвестно',
+      assignee: users.value.find(u => u.id === defectData.assigneeId)?.name || 'Не назначен',
+      status: 'Открыт',
+      priority: defectData.priority
+    };
+    
+    defects.value.unshift(newDefect);
+    
+    alert('Дефект успешно создан!');
+  } catch (error) {
+    console.error('[v0] Error creating defect:', error);
+    alert('Ошибка при создании дефекта');
+  }
+};
+
+const viewDefect = (defectId) => {
+  router.push(`/defects/${defectId}`);
 };
 </script>
 

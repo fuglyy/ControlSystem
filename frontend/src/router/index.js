@@ -13,12 +13,20 @@ const routes = [
   { path: "/projects", component: ProjectsView, meta: { requiresAuth: true } },
   { path: "/defects", component: DefectsView, meta: { requiresAuth: true } },
   { path: "/reports", component: ReportsView, meta: { requiresAuth: true } },
+  {
+    path: "/defects/:id",
+    name: "DefectDetail",
+    component: () => import("../views/DefectDetail.vue"),
+    props: true,
+  }
+
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
 
 /*router.beforeEach((to) => {
   const auth = useAuthStore();
