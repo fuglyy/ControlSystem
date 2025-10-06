@@ -33,7 +33,9 @@ const handleLogin = async () => {
 
   try {
     await auth.login(username.value, password.value);
+
     router.push("/"); // редирект на главную
+    
   } catch (err) {
     error.value = err.message || "Ошибка входа!";
   } finally {

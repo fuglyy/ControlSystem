@@ -1,15 +1,16 @@
-
 import { defineStore } from "pinia";
 import api from "../api/axios";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     token: localStorage.getItem("token") || "",
-    user: null,
+    user: JSON.parse(localStorage.getItem("user")) || null,
   }),
+
   getters: {
     isAuthenticated: (state) => !!state.token,
   },
+
   actions: {
     async login(username, password) {
       try {
@@ -17,9 +18,29 @@ export const useAuthStore = defineStore("auth", {
         this.token = res.data.token;
         localStorage.setItem("token", this.token);
 
-        // Раскодируем JWT, чтобы получить имя пользователя и роль
+        // Раскодируем JWT
         const payload = JSON.parse(atob(this.token.split(".")[1]));
-        this.user = { username: payload.sub, id: payload.nameid, role: payload.role };
+        console.log("JWT payload:", payload);
+
+        // Берём username, id и role из payload, переименовываем role в короткое поле
+        const userRole =
+          payload.role ||
+          payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          "Без роли";
+
+        const userId =
+          payload.nameid ||
+          payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+          null;
+
+        this.user = {
+          username: payload.sub || payload.unique_name || "Пользователь",
+          id: userId,
+          role: userRole,
+        };
+
+        // Сохраняем в localStorage
+        localStorage.setItem("user", JSON.stringify(this.user));
       } catch (err) {
         throw new Error("Неверный логин или пароль");
       }
@@ -38,6 +59,15 @@ export const useAuthStore = defineStore("auth", {
       this.token = "";
       this.user = null;
       localStorage.removeItem("token");
-    }
-  }
+      localStorage.removeItem("user");
+    },
+
+    // Инициализация при старте приложения
+    init() {
+      const savedToken = localStorage.getItem("token");
+      const savedUser = localStorage.getItem("user");
+      if (savedToken) this.token = savedToken;
+      if (savedUser) this.user = JSON.parse(savedUser);
+    },
+  },
 });

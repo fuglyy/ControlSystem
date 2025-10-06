@@ -14,7 +14,7 @@ const routes = [
   { path: "/", component: DashBoardView, meta: { requiresAuth: true } },
   { path: "/projects", component: ProjectsView, meta: { requiresAuth: true } },
   { path: "/defects", component: DefectsView, meta: { requiresAuth: true } },
-  { path: "/reports", component: ReportsView, meta: { requiresAuth: true, roles: ["Manager", "Director"] } },
+  { path: "/reports", component: ReportsView, meta: { requiresAuth: true } },
   {
     path: "/defects/:id",
     name: "DefectDetail",

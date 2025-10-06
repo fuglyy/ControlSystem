@@ -5,7 +5,7 @@
         <h1>Дефекты</h1>
         <p class="header-subtitle">Отслеживание и управление дефектами</p>
       </div>
-      <button class="add-button" @click="openAddModal" >
+      <button v-if="auth.user?.role === 'Engineer'" class="add-button" @click="openAddModal" >
         <span class="button-icon">+</span>
         <span>Добавить дефект</span>
       </button>

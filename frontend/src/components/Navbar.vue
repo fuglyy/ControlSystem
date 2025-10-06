@@ -30,7 +30,7 @@
             <div class="user-avatar">{{ getUserInitials() }}</div>
             <div class="user-details">
               <span class="user-name">{{ getUserName() }}</span>
-              <span class="user-role">Администратор</span>
+              <span class="user-role">{{getUserRole()}}</span>
             </div>
           </div>
           <button @click="logout" class="logout-button">
@@ -76,10 +76,10 @@ const auth = useAuthStore();
 const mobileMenuOpen = ref(false);
 
 const navItems = [
-  { name: 'Главная', route: '/', icon: '' },
-  { name: 'Проекты', route: '/projects', icon: '' },
-  { name: 'Дефекты', route: '/defects', icon: '' },
-  { name: 'Отчёты', route: '/reports', icon: '' }
+  { name: 'Главная', route: '/'},
+  { name: 'Проекты', route: '/projects'},
+  { name: 'Дефекты', route: '/defects' },
+  { name: 'Отчёты', route: '/reports'}
 ];
 
 const goTo = (path) => {
@@ -109,6 +109,12 @@ const getUserName = () => {
   const user = auth.user;
   return user?.username || 'Пользователь';
 };
+
+const getUserRole = () => {
+  const user = auth.user;
+  console.log("NavBar user:", user);
+  return user?.role ? user.role : 'Без роли'
+}
 
 const logout = () => {
   if (confirm('Вы уверены, что хотите выйти?')) {

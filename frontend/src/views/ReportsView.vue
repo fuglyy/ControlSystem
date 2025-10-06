@@ -5,7 +5,7 @@
         <h1>📈 Отчёты</h1>
         <p class="header-subtitle">Аналитика и статистика проектов</p>
       </div>
-      <button class="generate-button">
+      <button v-if="auth.user?.role === 'Manager'" class="generate-button">
         <span class="button-icon">📊</span>
         <span>Создать отчёт</span>
       </button>
