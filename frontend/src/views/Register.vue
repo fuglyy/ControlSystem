@@ -1,15 +1,20 @@
 <template>
   <div class="login-container">
-    <form @submit.prevent="handleLogin" class="login-form">
+    <form @submit.prevent="handleRegister">
       <input v-model="username" placeholder="Имя пользователя" required />
       <input v-model="password" type="password" placeholder="Пароль" required />
+      <select v-model="role">
+        <option value="Engineer">Engineer</option>
+        <option value="Manager">Manager</option>
+        <option value="Director">Director</option>
+      </select>
       <button type="submit" :disabled="isLoading">
-        <span v-if="!isLoading">Войти</span>
-        <span v-else>Вход...</span>
+        <span v-if="!isLoading">Создать аккаунт</span>
+        <span v-else>Регистрация...</span>
       </button>
     </form>
     <p v-if="error" class="error">{{ error }}</p>
-    <p>Нет аккаунта? <router-link to="/register">Создать</router-link></p>
+    <p>Уже есть аккаунт? <router-link to="/login">Войти</router-link></p>
   </div>
 </template>
 
@@ -20,28 +25,29 @@ import { useRouter } from "vue-router";
 
 const username = ref("");
 const password = ref("");
+const role = ref("Engineer");
 const error = ref("");
 const isLoading = ref(false);
 
 const auth = useAuthStore();
 const router = useRouter();
 
-const handleLogin = async () => {
+const handleRegister = async () => {
   if (isLoading.value) return;
   isLoading.value = true;
   error.value = "";
 
   try {
-    await auth.login(username.value, password.value);
-    router.push("/"); // редирект на главную
+    await auth.register(username.value, password.value, role.value);
+    alert("Аккаунт создан! Войдите, чтобы продолжить.");
+    router.push("/login");
   } catch (err) {
-    error.value = err.message || "Ошибка входа!";
+    error.value = err.message || "Ошибка регистрации!";
   } finally {
     isLoading.value = false;
   }
 };
 </script>
-
 
 <style scoped>
 .login-container {

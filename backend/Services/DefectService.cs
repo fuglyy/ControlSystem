@@ -1,26 +1,19 @@
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
 public class DefectService
 {
     private readonly IMongoCollection<Defect> _defects;
 
-    public DefectService(IOptions<MongoDbSettings> settings)
+    public DefectService(IMongoDatabase database)
     {
-        var client = new MongoClient(settings.Value.ConnectionString);
-        var database = client.GetDatabase(settings.Value.DatabaseName);
         _defects = database.GetCollection<Defect>("Defects");
     }
 
-    public async Task<List<Defect>> GetAllAsync()
-    {
-        return await _defects.Find(_ => true).ToListAsync();
-    }
+    public async Task<List<Defect>> GetAllAsync() =>
+        await _defects.Find(_ => true).ToListAsync();
 
-    public async Task<Defect?> GetByIdAsync(string id)
-    {
-        return await _defects.Find(d => d.Id == id).FirstOrDefaultAsync();
-    }
+    public async Task<Defect?> GetByIdAsync(string id) =>
+        await _defects.Find(d => d.Id == id).FirstOrDefaultAsync();
 
     public async Task<Defect> CreateAsync(Defect d)
     {

@@ -8,12 +8,23 @@
       
       <div class="header-actions">
         <button 
+          v-if="!isEditing"
           class="action-button edit"
-          @click="showEditModal = true"
+          @click="isEditing = true"
         >
           <span>✏️</span>
           <span>Редактировать</span>
         </button>
+
+        <button 
+          class="action-button save"
+          v-else
+          @click="saveChanges"
+        >
+          <span>💾</span>
+          <span>Сохранить</span>
+        </button>
+
         <button 
           class="action-button delete"
           @click="handleDelete"
@@ -54,6 +65,7 @@
                   :assignee="defect.assignee"
                   :users="users"
                   @assign="handleAssigneeChange"
+                  :disabled="!isEditing"
                 />
               </div>
             </div>
@@ -62,7 +74,21 @@
               <span class="meta-icon">📅</span>
               <div class="meta-content">
                 <span class="meta-label">Дедлайн</span>
-                <span class="meta-value" :class="{ 'overdue': isOverdue }">
+                <input
+                  v-if="isEditing"
+                  type="date"
+                  v-model="defect.deadline"
+                  class="meta-input"
+                  @change="onFieldChange('deadline')"
+                
+                />
+                <span
+                  v-else
+                  class="meta-value"
+                  :class="{ 'overdue': isOverdue }"
+              
+                  title="Нажмите, чтобы изменить"
+                >
                   {{ formatDate(defect.deadline) }}
                 </span>
               </div>
@@ -158,7 +184,7 @@
               :key="status.value"
               :class="['status-button', status.class, { active: defect.status === status.value }]"
               @click="changeStatus(status.value)"
-              :disabled="!canChangeStatus"
+              :disabled="!isEditing"
             >
               <span>{{ status.icon }}</span>
               <span>{{ status.label }}</span>
@@ -201,7 +227,23 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
-const showEditModal = ref(false);
+const isEditing = ref(false)
+const enableEditing = () => {
+  isEditing.value = true
+  console.log("Редактирование включено")
+}
+
+const saveChanges = () => {
+  isEditing.value = false
+  history.value.push({
+    action: 'Сохранены изменения',
+    author: auth.user?.fullName || 'Пользователь',
+    timestamp: new Date().toISOString(),
+    type: 'edit'
+  })
+  console.log('[v0] Changes saved:', defect.value)
+}
+
 const newComment = ref('');
 
 const defect = ref({
@@ -325,6 +367,16 @@ const formatDate = (dateString) => {
   });
 };
 
+const onFieldChange = (field) => {
+  history.value.push({
+    action: `Изменено поле "${field}"`,
+    author: auth.user?.fullName || 'Пользователь',
+    timestamp: new Date().toISOString(),
+    details: `Новое значение: ${defect.value[field]}`,
+    type: 'edit'
+  });
+}
+
 const formatTime = (timestamp) => {
   const date = new Date(timestamp);
   const now = new Date();
@@ -372,7 +424,7 @@ const addComment = () => {
 };
 
 const changeStatus = (newStatus) => {
-  if (!auth.canCreateDefect() || defect.value.status === newStatus) return;
+  if ( defect.value.status === newStatus) return;
   
   const oldStatus = defect.value.status;
   defect.value.status = newStatus;
@@ -417,9 +469,9 @@ const openPhotoViewer = (index) => {
   console.log('[v0] Opening photo viewer:', index);
 };
 
-//const canEdit = computed(() => auth.canCreateDefect());
-//const canDelete = computed(() => auth.canAssignDefect());
-//const canChangeStatus = computed(() => auth.canCreateDefect());
+const canEdit = computed(() => true);
+const canDelete = computed(() => true);
+const canChangeStatus = computed(() => true);
 </script>
 
 <style scoped>

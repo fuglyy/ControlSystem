@@ -223,7 +223,7 @@ const auth = useAuthStore();
 const fileInput = ref(null);
 const isSubmitting = ref(false);
 
-const canAssign = computed(() => auth.canAssignDefect());
+const canAssign = computed(() => true);
 
 const formData = ref({
   title: '',

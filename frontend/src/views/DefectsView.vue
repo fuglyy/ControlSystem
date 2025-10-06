@@ -2,10 +2,10 @@
   <div class="defects-page">
     <div class="page-header">
       <div class="header-content">
-        <h1>🐛 Дефекты</h1>
+        <h1>Дефекты</h1>
         <p class="header-subtitle">Отслеживание и управление дефектами</p>
       </div>
-      <button class="add-button" @click="openAddModal" v-if="canCreate">
+      <button class="add-button" @click="openAddModal" >
         <span class="button-icon">+</span>
         <span>Добавить дефект</span>
       </button>

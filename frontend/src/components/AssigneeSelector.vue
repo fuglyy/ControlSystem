@@ -86,12 +86,13 @@ const props = defineProps({
   users: {
     type: Array,
     required: true
-  }
+  },
+  disabled: Boolean
 });
 
 const emit = defineEmits(['assign']);
 
-const canAssign = computed(() => true);
+const canAssign = computed(() => !props.disabled);
 
 const currentAssignee = computed(() => {
   if (!props.assignee) return null;
