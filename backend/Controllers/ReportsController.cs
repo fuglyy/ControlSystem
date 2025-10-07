@@ -5,66 +5,37 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class ReportsController : ControllerBase
 {
-    private readonly ProjectService _projects;
-    private readonly DefectService _defects;
+    // ⭐ ИСПОЛЬЗУЕМ ТОЛЬКО IReportService ⭐
+    private readonly IReportService _reportService; 
 
-    public ReportsController(ProjectService projects, DefectService defects)
+    // Обновлённый конструктор
+    public ReportsController(IReportService reportService)
     {
-        _projects = projects;
-        _defects = defects;
+        _reportService = reportService;
     }
 
+    // 1. GET projects
+    // Теперь вся логика находится в сервисе.
     [HttpGet("projects")]
     [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> ProjectReport()
     {
-        var projects = await _projects.GetAllAsync();
-        var report = projects.Select(p => new
-        {
-            Project = p.Name,
-            TotalStages = p.Stages.Count,
-            Completed = p.Stages.Count(s => s.Status == "Done"),
-            InProgress = p.Stages.Count(s => s.Status == "InProgress"),
-            Planned = p.Stages.Count(s => s.Status == "Planned")
-        });
-
-        return Ok(report);
+        return Ok(await _reportService.GetProjectReportAsync());
     }
 
+    // 2. GET defects
     [HttpGet("defects")]
     [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> DefectReport()
     {
-        var defects = await _defects.GetAllAsync();
-        var grouped = defects.GroupBy(d => d.Status).Select(g => new
-        {
-            Status = g.Key,
-            Count = g.Count()
-        });
-
-        return Ok(grouped);
+        return Ok(await _reportService.GetDefectReportAsync());
     }
-
+    
+    // 3. GET summary
     [HttpGet("summary")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Summary()
     {
-        var projects = await _projects.GetAllAsync();
-        var defects = await _defects.GetAllAsync();
-
-        var summary = new
-        {
-            TotalProjects = projects.Count,
-            TotalDefects = defects.Count,
-            DefectsByStatus = defects.GroupBy(d => d.Status).Select(g => new { Status = g.Key, Count = g.Count() }),
-            ProjectsProgress = projects.Select(p => new
-            {
-                p.Name,
-                CompletedStages = p.Stages.Count(s => s.Status == "Done"),
-                TotalStages = p.Stages.Count
-            })
-        };
-
-        return Ok(summary);
+        return Ok(await _reportService.GetSummaryReportAsync());
     }
 }

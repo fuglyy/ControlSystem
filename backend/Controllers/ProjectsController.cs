@@ -1,41 +1,44 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 
-
 [ApiController]
 [Route("api/[controller]")]
 public class ProjectsController : ControllerBase
 {
-    private readonly ProjectService _service;
+    private readonly IProjectService _service;
 
-    public ProjectsController(ProjectService service)
+    public ProjectsController(IProjectService service)
     {
         _service = service;
     }
 
     [HttpGet]
-    public async Task<IEnumerable<Project>> GetAll() =>
-        await _service.GetAllAsync();
+    [Authorize(Roles = "Engineer,Manager,Director")] // Добавил Authorize
+    public async Task<IEnumerable<ProjectSummaryDto>> GetAll() => // Изменили тип
+        await _service.GetAllSummariesAsync(); // Требуется новый метод в IProjectService
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Project>> Get(string id)
+    [Authorize(Roles = "Engineer,Manager,Director")] // Добавил Authorize
+    public async Task<ActionResult<ProjectDetailDto>> Get(string id) // Изменили тип
     {
-        var proj = await _service.GetByIdAsync(id);
-        if (proj == null) return NotFound();
-        return proj;
+        var projDto = await _service.GetDetailByIdAsync(id); // Требуется новый метод
+        if (projDto == null) return NotFound();
+        return projDto;
     }
 
     [HttpPost]
     [Authorize(Roles = "Manager,Admin")] 
     public async Task<IActionResult> Create(Project project)
     {
+        project.CreatedAt = DateTime.UtcNow; // Установим дату создания на сервере
         await _service.CreateAsync(project);
-        return CreatedAtAction(nameof(Get), new { id = project.Id }, project);
+        
+        return CreatedAtAction(nameof(Get), new { id = project.Id }, new { id = project.Id }); 
     }
 
     [HttpPut("{id}/stage")]
     [Authorize(Roles = "Manager,Admin")]
-    public async Task<IActionResult> AddStage(string id, ProjectStage stage)
+    public async Task<IActionResult> AddStage(string id, [FromBody] ProjectStage stage)
     {
         var updated = await _service.AddStageAsync(id, stage);
         if (!updated) return NotFound();

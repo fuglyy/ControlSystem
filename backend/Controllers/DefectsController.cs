@@ -5,44 +5,55 @@ using Microsoft.AspNetCore.Authorization;
 [Route("api/[controller]")]
 public class DefectsController : ControllerBase
 {
-    private readonly DefectService _defectService;
+    private readonly IDefectService _defectService;
 
-    public DefectsController(DefectService defectService)
+    public DefectsController(IDefectService defectService)
     {
         _defectService = defectService;
     }
 
+   
     [HttpGet]
     [Authorize(Roles = "Engineer,Manager,Director")]
-    public async Task<IActionResult> List() =>
-        Ok(await _defectService.GetAllAsync());
+    public async Task<ActionResult<IEnumerable<DefectSummaryDto>>> List()
+    {
+        return Ok(await _defectService.GetDefectListAsync());  
+    }
 
     [HttpGet("{id}")]
     [Authorize(Roles = "Engineer,Manager,Director")]
-    public async Task<IActionResult> Get(string id)
+    public async Task<ActionResult<DefectDetailDto>> Get(string id)
     {
-        var d = await _defectService.GetByIdAsync(id);
-        return d == null ? NotFound() : Ok(d);
+        var defectDto = await _defectService.GetDefectDetailsAsync(id);
+
+        if (defectDto == null)
+        {
+            return NotFound();
+        }
+
+        return defectDto;
     }
 
     [HttpPost]
     [Authorize(Roles = "Engineer")]
     public async Task<IActionResult> Create([FromBody] Defect d)
     {
+        d.CreatedAt = DateTime.UtcNow; 
+        
         await _defectService.CreateAsync(d);
-        return CreatedAtAction(nameof(Get), new { id = d.Id }, d);
+        
+        return CreatedAtAction(nameof(Get), new { id = d.Id }, new { id = d.Id });
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Engineer,Manager")]
     public async Task<IActionResult> Update(string id, [FromBody] Defect d)
     {
-        var exists = await _defectService.GetByIdAsync(id);
-        if (exists == null) return NotFound();
-
+        
         d.Id = id; 
         var ok = await _defectService.UpdateAsync(id, d);
-        return ok ? NoContent() : StatusCode(500);
+        
+        return ok ? NoContent() : NotFound(); 
     }
 
 

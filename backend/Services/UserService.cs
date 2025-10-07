@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
-public class UserService
+public class UserService : IUserService 
 {
     private readonly IMongoCollection<User> _users;
 
@@ -30,6 +30,34 @@ public class UserService
     {
         var result = await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
         return result.ModifiedCount > 0;
+    }
+
+    public async Task<UserSummaryDto?> GetUserSummaryByIdAsync(string id)
+    {
+        var userDto = await _users.Find(u => u.Id == id)
+            .Project(u => new UserSummaryDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Role = u.Role
+            })
+            .FirstOrDefaultAsync();
+
+        return userDto;
+    }
+    // UserService.cs
+
+    public async Task<IEnumerable<UserSummaryDto>> GetUsersSummaryByIdsAsync(IEnumerable<string> ids)
+    {
+        // Находим всех пользователей, ID которых входят в список
+        return await _users.Find(u => ids.Contains(u.Id))
+            .Project(u => new UserSummaryDto // Проецируем только нужные поля сразу в DTO
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Role = u.Role
+            })
+            .ToListAsync();
     }
 
 }
