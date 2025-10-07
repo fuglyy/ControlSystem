@@ -5,7 +5,7 @@
         <h1>Дефекты</h1>
         <p class="header-subtitle">Отслеживание и управление дефектами</p>
       </div>
-      <button v-if="auth.user?.role === 'Engineer'" class="add-button" @click="openAddModal" >
+      <button v-if="auth.user?.role === 'Engineer' || auth.user?.role === 'Manager'" class="add-button" @click="openAddModal" >
         <span class="button-icon">+</span>
         <span>Добавить дефект</span>
       </button>
@@ -74,11 +74,8 @@
             </td>
             <td>
               <div class="action-buttons">
-                <button class="edit-button" title="Редактировать">
-                  ✏️
-                </button>
-                <button class="delete-button" title="Удалить">
-                  ×
+                <button class="delete-button">
+                  Подробнее
                 </button>
               </div>
             </td>
@@ -103,10 +100,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../store/auth';
 import { useRouter } from 'vue-router';
 import AddDefectModal from '../components/AddDefectModal.vue';
+import { getDefects, createDefect } from '../api/defect';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -114,9 +112,20 @@ const searchQuery = ref('');
 const statusFilter = ref('');
 const priorityFilter = ref('');
 const showAddModal = ref(false);
+const defects = ref([]);
 
-const canCreate = computed(() => true);
 
+
+onMounted(async () => {
+  try {
+    const data = await getDefects();
+    defects.value = data;
+    console.log("[Defects] Loaded from API:", data);
+  } catch (err) {
+    console.error("Ошибка при загрузке дефектов:", err);
+    alert("Не удалось загрузить дефекты с сервера");
+  }
+});
 
 const projects = ref([
   { id: 1, name: 'CRM Система' },
@@ -133,48 +142,7 @@ const users = ref([
   { id: 5, name: 'Екатерина Волкова' }
 ]);
 
-const defects = ref([
-  {
-    id: 1,
-    description: 'Ошибка в форме логина',
-    project: 'CRM Система',
-    assignee: 'Иван',
-    status: 'Открыт',
-    priority: 'high'
-  },
-  {
-    id: 2,
-    description: 'Не грузится отчет',
-    project: 'Веб-портал',
-    assignee: 'Мария',
-    status: 'В работе',
-    priority: 'medium'
-  },
-  {
-    id: 3,
-    description: 'Проблема с авторизацией',
-    project: 'Мобильное приложение',
-    assignee: 'Алексей',
-    status: 'На проверке',
-    priority: 'low'
-  },
-  {
-    id: 4,
-    description: 'Медленная загрузка страницы',
-    project: 'Веб-портал',
-    assignee: 'Дмитрий',
-    status: 'Открыт',
-    priority: 'high'
-  },
-  {
-    id: 5,
-    description: 'Неправильное отображение графиков',
-    project: 'Аналитическая система',
-    assignee: 'Екатерина',
-    status: 'Закрыт',
-    priority: 'medium'
-  }
-]);
+
 
 const filteredDefects = computed(() => {
   return defects.value.filter(defect => {
@@ -213,34 +181,32 @@ const openAddModal = () => {
 };
 
 const handleDefectSubmit = async (defectData) => {
-  console.log('[v0] Submitting defect:', defectData);
-  
+  console.log('[Defects] Submitting defect:', defectData);
+
   try {
-    // TODO: Replace with actual API call
-    // const response = await fetch('/api/defects', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(defectData)
-    // });
-    
-    // Mock: Add to local array
     const newDefect = {
-      id: defects.value.length + 1,
-      description: defectData.title,
-      project: projects.value.find(p => p.id === defectData.projectId)?.name || 'Неизвестно',
-      assignee: users.value.find(u => u.id === defectData.assigneeId)?.name || 'Не назначен',
-      status: 'Открыт',
-      priority: defectData.priority
-    };
-    
-    defects.value.unshift(newDefect);
-    
+  Title: defectData.title,
+  Description: defectData.description || '',
+  Priority: defectData.priority || 'Medium',
+  Status: 'New',
+  AssignedToId: defectData.assigneeId ? String(defectData.assigneeId) : null,
+  ProjectId: defectData.projectId ? String(defectData.projectId) : null,
+  DueDate: defectData.deadline ? new Date(defectData.deadline).toISOString() : null
+};
+
+    console.log('[Defects] Sending to API:', newDefect);
+
+    const created = await createDefect(newDefect);
+
+    defects.value.unshift(created); 
+    showAddModal.value = false;
     alert('Дефект успешно создан!');
   } catch (error) {
-    console.error('[v0] Error creating defect:', error);
+    console.error('[Defects] Error creating defect:', error);
     alert('Ошибка при создании дефекта');
   }
 };
+
 
 const viewDefect = (defectId) => {
   router.push(`/defects/${defectId}`);

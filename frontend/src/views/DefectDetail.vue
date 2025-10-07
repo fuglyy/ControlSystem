@@ -36,232 +36,307 @@
     </div>
 
     <div class="content-grid">
-      <div class="main-content">
-        <div class="defect-card">
-          <div class="card-header">
-            <div class="defect-title-section">
-              <div class="defect-id">#{{ defect.id }}</div>
-              <h1>{{ defect.title }}</h1>
-            </div>
-            <div class="priority-badge" :class="defect.priority">
-              {{ getPriorityText(defect.priority) }}
+  <div class="main-content">
+    <div v-if="isLoading">
+      <p>Загрузка данных дефекта...</p>
+    </div>
+
+    <div v-else-if="defect">
+      <div class="defect-card">
+        <div class="card-header">
+          <div class="defect-title-section">
+            <div class="defect-id">#{{ defect.id }}</div>
+            <h1>{{ defect.title }}</h1>
+          </div>
+          <div class="priority-badge" :class="defect.priority">
+            {{ getPriorityText(defect.priority) }}
+          </div>
+        </div>
+
+        <div class="defect-meta">
+          <div class="meta-item">
+            <span class="meta-icon">📂</span>
+            <div class="meta-content">
+              <span class="meta-label">Проект</span>
+              <span class="meta-value">{{ defect.project }}</span>
             </div>
           </div>
-
-          <div class="defect-meta">
-            <div class="meta-item">
-              <span class="meta-icon">📂</span>
-              <div class="meta-content">
-                <span class="meta-label">Проект</span>
-                <span class="meta-value">{{ defect.project }}</span>
-              </div>
-            </div>
-            
-            <div class="meta-item full-width">
-              <span class="meta-icon">👤</span>
-              <div class="meta-content assignee-content">
-                <span class="meta-label">Исполнитель</span>
-                <AssigneeSelector
-                  :assignee="defect.assignee"
-                  :users="users"
-                  @assign="handleAssigneeChange"
-                  :disabled="!isEditing"
-                />
-              </div>
-            </div>
-            
-            <div class="meta-item">
-              <span class="meta-icon">📅</span>
-              <div class="meta-content">
-                <span class="meta-label">Дедлайн</span>
-                <input
-                  v-if="isEditing"
-                  type="date"
-                  v-model="defect.deadline"
-                  class="meta-input"
-                  @change="onFieldChange('deadline')"
-                
-                />
-                <span
-                  v-else
-                  class="meta-value"
-                  :class="{ 'overdue': isOverdue }"
-              
-                  title="Нажмите, чтобы изменить"
-                >
-                  {{ formatDate(defect.deadline) }}
-                </span>
-              </div>
-            </div>
-            
-            <div class="meta-item">
-              <span class="meta-icon">📊</span>
-              <div class="meta-content">
-                <span class="meta-label">Статус</span>
-                <div class="status-badge" :class="getStatusClass(defect.status)">
-                  {{ defect.status }}
-                </div>
-              </div>
+          
+          <div class="meta-item full-width">
+            <span class="meta-icon">👤</span>
+            <div class="meta-content assignee-content">
+              <span class="meta-label">Исполнитель</span>
+              <AssigneeSelector
+                :assignee="defect.assignee"
+                :users="users"
+                @assign="handleAssigneeChange"
+                :disabled="!isEditing"
+              />
             </div>
           </div>
-
-          <div class="description-section">
-            <h3>Описание</h3>
-            <p>{{ defect.description }}</p>
-          </div>
-
-          <div v-if="defect.photos && defect.photos.length > 0" class="photos-section">
-            <h3>Фотографии</h3>
-            <div class="photos-grid">
-              <div 
-                v-for="(photo, index) in defect.photos" 
-                :key="index"
-                class="photo-item"
-                @click="openPhotoViewer(index)"
+          
+          <div class="meta-item">
+            <span class="meta-icon">📅</span>
+            <div class="meta-content">
+              <span class="meta-label">Дедлайн</span>
+              <input
+                v-if="isEditing"
+                type="date"
+                v-model="defect.deadline"
+                class="meta-input"
+                @change="onFieldChange('deadline')"
+              />
+              <span
+                v-else
+                class="meta-value"
+                :class="{ 'overdue': isOverdue }"
+                title="Нажмите, чтобы изменить"
               >
-                <img :src="photo" :alt="`Фото ${index + 1}`" />
+                {{ formatDate(defect.deadline) }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="meta-item">
+            <span class="meta-icon">📊</span>
+            <div class="meta-content">
+              <span class="meta-label">Статус</span>
+              <div class="status-badge" :class="getStatusClass(defect.status)">
+                {{ defect.status }}
               </div>
             </div>
           </div>
         </div>
 
-        <div class="comments-card">
-          <div class="comments-header">
-            <h3>Комментарии</h3>
-            <span class="comments-count">{{ comments.length }}</span>
-          </div>
-
-          <div class="add-comment-form">
-            <div class="user-avatar">{{ getUserInitials() }}</div>
-            <div class="comment-input-wrapper">
-              <textarea
-                v-model="newComment"
-                placeholder="Добавить комментарий..."
-                rows="3"
-                class="comment-input"
-              ></textarea>
-              <button 
-                @click="addComment" 
-                :disabled="!newComment.trim()"
-                class="send-button"
-              >
-                <span>Отправить</span>
-                <span>→</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="comments-list">
-            <div 
-              v-for="comment in comments" 
-              :key="comment.id"
-              class="comment-item"
-            >
-              <div class="comment-avatar">{{ comment.author.charAt(0) }}</div>
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-author">{{ comment.author }}</span>
-                  <span class="comment-time">{{ formatTime(comment.timestamp) }}</span>
-                </div>
-                <p class="comment-text">{{ comment.text }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="comments.length === 0" class="empty-comments">
-            <span class="empty-icon">💬</span>
-            <p>Пока нет комментариев</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="sidebar">
-        <div class="status-card">
-          <h3>Изменить статус</h3>
-          <div class="status-buttons">
-            <button
-              v-for="status in availableStatuses"
-              :key="status.value"
-              :class="['status-button', status.class, { active: defect.status === status.value }]"
-              @click="changeStatus(status.value)"
-              :disabled="!isEditing"
-            >
-              <span>{{ status.icon }}</span>
-              <span>{{ status.label }}</span>
-            </button>
-          </div>
+        <div class="description-section">
+          <h3>Описание</h3>
+          <p>{{ defect.description }}</p>
         </div>
 
-        <div class="history-card">
-          <h3>История изменений</h3>
-          <div class="timeline">
+        <div v-if="defect.photos && defect.photos.length > 0" class="photos-section">
+          <h3>Фотографии</h3>
+          <div class="photos-grid">
             <div 
-              v-for="(event, index) in history" 
+              v-for="(photo, index) in defect.photos" 
               :key="index"
-              class="timeline-item"
+              class="photo-item"
+              @click="openPhotoViewer(index)"
             >
-              <div class="timeline-dot" :class="event.type"></div>
-              <div class="timeline-content">
-                <div class="timeline-header">
-                  <span class="timeline-action">{{ event.action }}</span>
-                  <span class="timeline-time">{{ formatTime(event.timestamp) }}</span>
-                </div>
-                <p class="timeline-author">{{ event.author }}</p>
-                <p v-if="event.details" class="timeline-details">{{ event.details }}</p>
-              </div>
+              <img :src="photo" :alt="`Фото ${index + 1}`" />
             </div>
           </div>
         </div>
       </div>
+      <div class="comments-card">
+        <div class="comments-header">
+          <h3>Комментарии</h3>
+          <span class="comments-count">{{ comments.length }}</span>
+        </div>
+        </div>
+      
+    </div>
+    <div v-else>
+        <p>{{ error || 'Не удалось загрузить дефект.' }}</p>
     </div>
   </div>
+
+  <div v-if="defect" class="sidebar">
+    <div class="status-card">
+      <h3>Изменить статус</h3>
+      <div class="status-buttons">
+        <button
+          v-for="status in availableStatuses"
+          :key="status.value"
+          :class="['status-button', status.class, { active: defect.status === status.value }]"
+          @click="changeStatus(status.value)"
+          :disabled="!isEditing"
+        >
+          <span>{{ status.icon }}</span>
+          <span>{{ status.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="history-card">
+      <h3>История изменений</h3>
+      </div>
+  </div>
+</div>
+    </div>
+
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import axios from 'axios'
+import { ref, computed, onMounted  } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../store/auth';
 import AssigneeSelector from '../components/AssigneeSelector.vue';
+
+const defect = ref(null)
+const isLoading = ref(true)
+const error = ref(null)
 
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
 const isEditing = ref(false)
-const enableEditing = () => {
-  isEditing.value = true
-  console.log("Редактирование включено")
-}
 
-const saveChanges = () => {
-  isEditing.value = false
-  history.value.push({
-    action: 'Сохранены изменения',
-    author: auth.user?.fullName || 'Пользователь',
-    timestamp: new Date().toISOString(),
-    type: 'edit'
-  })
-  console.log('[v0] Changes saved:', defect.value)
-}
+
+onMounted(async () => {
+  const { id } = route.params;
+
+  // Если это режим создания, выходим (этот код вы уже исправляли)
+  if (id === 'new' || id === undefined) {
+    // ... (ваш код инициализации)
+    return;
+  }
+  
+  // Режим просмотра/редактирования: Загружаем данные
+  try {
+    const response = await axios.get(`/api/defects/${id}`);
+    const rawDefect = response.data;
+    
+    // ⭐ ИСПРАВЛЕНИЕ: Объявляем переменные let в самом начале блока try
+    let originalAssignedToId = null; 
+    let originalProjectId = null;
+    let assigneeObject = null;
+    let projectTitle = 'Не назначен'; 
+    
+    // 1. ПОИСК ИСПОЛНИТЕЛЯ
+    if (rawDefect.assignedToId) {
+      // ⭐ Теперь эта переменная уже определена
+      originalAssignedToId = rawDefect.assignedToId; 
+      assigneeObject = users.value.find(user => user.id == originalAssignedToId) || null;
+    }
+
+    // 2. ПОИСК ПРОЕКТА
+    if (rawDefect.projectId) {
+      // ⭐ Теперь эта переменная уже определена
+      originalProjectId = rawDefect.projectId; 
+      
+      const projectObject = projects.value.find(p => p.id == originalProjectId);
+      
+      if (projectObject) {
+        projectTitle = projectObject.name;
+      } else {
+        projectTitle = `ID проекта: ${originalProjectId} (Неизвестен)`; 
+      }
+    }
+    
+    // Формируем объект defect.value
+    defect.value = {
+      id: rawDefect.id,
+      title: rawDefect.title,        // 👈 ДОБАВЬТЕ ЭТО
+      description: rawDefect.description,  // 👈 ДОБАВЬТЕ ЭТО
+      priority: rawDefect.priority.toLowerCase(), // 👈 ДОБАВЬТЕ ЭТО (с преобразованием)
+      status: rawDefect.status, 
+      originalProjectId: originalProjectId, // 👈 Теперь она всегда определена (как null или ID)
+      originalAssignedToId: originalAssignedToId, // 👈 Теперь она всегда определена
+      createdAt: rawDefect.createdAt,
+      project: projectTitle, 
+      assignee: assigneeObject,
+      deadline: rawDefect.dueDate,
+    };
+
+  } catch (err) {
+    console.error('[DefectDetail] Load error:', err.message, err.response);
+    error.value = 'Не удалось загрузить дефект.';
+  } finally {
+    isLoading.value = false
+  }
+})
+
+const saveChanges = async () => {
+    // ⭐ Защита от отсутствия данных
+    if (!defect.value) {
+        alert('Невозможно сохранить: данные дефекта отсутствуют.');
+        return;
+    }
+
+    try {
+        const id = defect.value.id;
+        const isCreatingNew = id === null;
+        // 1. Создаем объект, который ТОЧНО соответствует модели на сервере
+        // ... внутри saveChanges
+        const dataToSend = {
+          id: id, 
+          // 1. Title и Description: Защита от undefined
+          title: defect.value.title || 'Новый дефект', 
+          description: defect.value.description || '',
+          
+          // 2. Priority и Status: Защита от undefined/null
+          priority: defect.value.priority || 'medium', 
+          status: defect.value.status || 'New',
+          createdAt: defect.value.createdAt, 
+          // 3. ID (AssignedToId, ProjectId): Обеспечиваем, что это СТРОКА или null
+          // (даже если бэкенд требует число, лучше явно преобразовать)
+          assignedToId: defect.value.assignee?.id ? String(defect.value.assignee.id) : null, 
+          projectId: defect.value.originalProjectId ? String(defect.value.originalProjectId) : null,
+
+          // 4. ⭐ ДАТА: Самая важная часть! Преобразование в ISO-8601
+          dueDate: defect.value.deadline 
+              ? new Date(defect.value.deadline).toISOString() 
+              : null,
+          
+          // 5. ID: Добавляем ID только для PUT-запроса (обновления)
+          // ВАЖНО: При POST этот ID будет удален из finalDataToSend
+           
+          
+          // 6. createdAt: Если сервер требует это поле, его нужно включить
+          // createdAt: defect.value.createdAt || undefined,
+        };
+// ...
+
+        // Определяем, это создание (POST) или обновление (PUT)
+        
+         let apiUrl;
+        let requestPromise; // Переименуем, чтобы было понятнее
+        let dataForApi = dataToSend;
+        if (isCreatingNew) {
+            // POST: Создание
+            apiUrl = '/api/Defects';
+            const { id: _, ...dataForPost } = dataToSend; // Удаляем ID
+            dataForApi = dataForPost;
+            requestPromise = axios.post(apiUrl, dataForApi);
+
+        } else {
+            // PUT: Обновление
+            apiUrl = `/api/Defects/${id}`;
+            requestPromise = axios.put(apiUrl, dataForApi); 
+        }
+        
+        // ⭐ ЛОГИРОВАНИЕ: Выводятся корректные данные перед отправкой
+        console.log('API URL:', apiUrl);
+        console.log('Data to send:', dataForApi);
+        
+        const response = await requestPromise;
+
+        isEditing.value = false;
+        alert(isCreatingNew ? 'Дефект успешно создан!' : 'Изменения сохранены!');
+
+        // Если создали, перенаправляем на страницу нового дефекта
+        if (isCreatingNew) {
+            router.push(`/defects/${response.data.id}`); 
+        }
+
+    } catch (err) {
+        console.error('[DefectDetail] Save error:', err);
+        // Добавьте alert для деталей ошибки, если она есть в теле ответа
+        alert('Ошибка при сохранении! Проверьте консоль для деталей ответа сервера (AxiosError).');
+    }
+};
+
 
 const newComment = ref('');
 
-const defect = ref({
-  id: route.params.id || 1,
-  title: 'Ошибка в форме логина',
-  description: 'При попытке входа в систему пользователи получают ошибку "Invalid credentials" даже при правильных данных. Проблема возникает периодически, примерно в 30% случаев. Необходимо проверить логику валидации на бэкенде и убедиться, что сессии корректно обрабатываются.',
-  project: 'CRM Система',
-  assignee: { id: 1, name: 'Иван Петров', role: 'Старший инженер' },
-  status: 'В работе',
-  priority: 'high',
-  deadline: '2025-02-15',
-  createdAt: '2025-02-01T10:30:00',
-  photos: [
-    '/placeholder.svg?height=300&width=400',
-    '/placeholder.svg?height=300&width=400',
-    '/placeholder.svg?height=300&width=400'
-  ]
-});
+const projects = ref([
+  { id: 1, name: 'CRM Система' },
+  { id: 2, name: 'Веб-портал' },
+  { id: 3, name: 'Мобильное приложение' },
+  { id: 4, name: 'Аналитическая система' }
+]);
 
 const users = ref([
   { id: 1, name: 'Иван Петров', role: 'Старший инженер' },
@@ -458,12 +533,18 @@ const handleAssigneeChange = (newAssignee) => {
   console.log('[v0] Assignee changed:', { oldAssignee, newAssignee });
 };
 
-const handleDelete = () => {
-  if (confirm('Вы уверены, что хотите удалить этот дефект?')) {
-    console.log('[v0] Deleting defect:', defect.value.id);
-    router.push('/defects');
+const handleDelete = async () => {
+  if (!confirm('Удалить этот дефект?')) return
+  try {
+    const { id } = defect.value
+    await axios.delete(`/api/defects/${id}`)
+    router.push('/defects')
+  } catch (err) {
+    console.error('[DefectDetail] Delete error:', err)
+    alert('Ошибка при удалении!')
   }
-};
+}
+
 
 const openPhotoViewer = (index) => {
   console.log('[v0] Opening photo viewer:', index);
