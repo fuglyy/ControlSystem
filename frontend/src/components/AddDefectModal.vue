@@ -128,7 +128,7 @@
                   :key="user.id"
                   :value="user.id"
                 >
-                  {{ user.name }}
+                  {{ user.username }}
                 </option>
               </select>
             </div>
@@ -282,23 +282,35 @@ const removePhoto = (index) => {
 };
 
 const handleSubmit = async () => {
-  isSubmitting.value = true;
-  
-  try {
-    // Prepare form data for API
-    const submitData = {
-      ...formData.value,
-      photos: formData.value.photos.map(p => p.file)
-    };
-    
-    emit('submit', submitData);
-    closeModal();
-  } catch (error) {
-    console.error('[v0] Error submitting defect:', error);
-    alert('Ошибка при создании дефекта');
-  } finally {
-    isSubmitting.value = false;
-  }
+  isSubmitting.value = true;
+  
+  try {
+    const dateOnly = formData.value.deadline;
+    
+    const finalDataToSend = {
+      title: formData.value.title,
+      description: formData.value.description,
+      projectId: formData.value.projectId, 
+      assignedToId: formData.value.assigneeId || null, 
+      priority: formData.value.priority,
+      
+      dueDate: dateOnly 
+        ? new Date(dateOnly).toISOString() 
+        : null,
+      
+    };
+    const submitPayload = {
+        data: finalDataToSend,
+        photos: formData.value.photos.map(p => p.file) 
+    }
+
+    emit('submit', submitPayload);
+    closeModal();
+  } catch (error) {
+    // ...
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 

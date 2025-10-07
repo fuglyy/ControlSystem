@@ -65,8 +65,8 @@
               </div>
             </td>
             <td class="defect-description">{{ defect.description }}</td>
-            <td>{{ defect.project }}</td>
-            <td>{{ defect.assignee }}</td>
+            <td>{{ defect.project?.name || 'Н/Д'  }}</td>
+            <td>{{ defect.assignedTo?.username || 'Н/Д' }}</td>
             <td>
               <div class="status-badge" :class="getStatusClass(defect.status)">
                 {{ defect.status }}
@@ -74,7 +74,7 @@
             </td>
             <td>
               <div class="action-buttons">
-                <button class="delete-button">
+                <button class="edit-button">
                   Подробнее
                 </button>
               </div>
@@ -127,28 +127,15 @@ onMounted(async () => {
   }
 });
 
-const projects = ref([
-  { id: 1, name: 'CRM Система' },
-  { id: 2, name: 'Веб-портал' },
-  { id: 3, name: 'Мобильное приложение' },
-  { id: 4, name: 'Аналитическая система' }
-]);
-
-const users = ref([
-  { id: 1, name: 'Иван Петров' },
-  { id: 2, name: 'Мария Сидорова' },
-  { id: 3, name: 'Алексей Иванов' },
-  { id: 4, name: 'Дмитрий Смирнов' },
-  { id: 5, name: 'Екатерина Волкова' }
-]);
-
 
 
 const filteredDefects = computed(() => {
   return defects.value.filter(defect => {
+    const projectName = defect.project?.name || ''; 
+
     const matchesSearch = !searchQuery.value || 
       defect.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      defect.project.toLowerCase().includes(searchQuery.value.toLowerCase());
+      projectName.toLowerCase().includes(searchQuery.value.toLowerCase()); // <--- ИСПОЛЬЗУЕМ projectName
     
     const matchesStatus = !statusFilter.value || defect.status === statusFilter.value;
     const matchesPriority = !priorityFilter.value || defect.priority === priorityFilter.value;
@@ -180,31 +167,46 @@ const openAddModal = () => {
   showAddModal.value = true;
 };
 
-const handleDefectSubmit = async (defectData) => {
-  console.log('[Defects] Submitting defect:', defectData);
+const handleDefectSubmit = async (payload) => {
+    const formDataToSend = new FormData();
 
-  try {
-    const newDefect = {
-  Title: defectData.title,
-  Description: defectData.description || '',
-  Priority: defectData.priority || 'Medium',
-  Status: 'New',
-  AssignedToId: defectData.assigneeId ? String(defectData.assigneeId) : null,
-  ProjectId: defectData.projectId ? String(defectData.projectId) : null,
-  DueDate: defectData.deadline ? new Date(defectData.deadline).toISOString() : null
-};
+    const defectData = payload.data; 
+    
+    
+    formDataToSend.append('Title', defectData.title);
+    formDataToSend.append('Description', defectData.description || '');
+    formDataToSend.append('Priority', defectData.priority || 'Medium');
+    formDataToSend.append('Status', 'New');
+    
+    if (defectData.assignedToId) formDataToSend.append('AssignedToId', defectData.assignedToId);
+    if (defectData.projectId) formDataToSend.append('ProjectId', defectData.projectId);
 
-    console.log('[Defects] Sending to API:', newDefect);
+    if (defectData.dueDate) formDataToSend.append('DueDate', defectData.dueDate); 
+    
+    
+    payload.photos.forEach((file) => {
+        formDataToSend.append('Photos', file); 
+    });
 
-    const created = await createDefect(newDefect);
-
-    defects.value.unshift(created); 
-    showAddModal.value = false;
-    alert('Дефект успешно создан!');
-  } catch (error) {
-    console.error('[Defects] Error creating defect:', error);
-    alert('Ошибка при создании дефекта');
-  }
+    try {
+        console.log('[Defects] Submitting defect with files...');
+        
+        const response = await axios.post('/api/defects', formDataToSend, {
+             headers: {
+                 'Content-Type': 'multipart/form-data' 
+             }
+        });
+        
+        const created = response.data; // Получаем созданный объект
+        
+        defects.value.unshift(created); 
+        showAddModal.value = false;
+        alert('Дефект успешно создан!');
+        
+    } catch (error) {
+        console.error('[Defects] Error creating defect:', error);
+        alert('Ошибка при создании дефекта');
+    }
 };
 
 
@@ -439,20 +441,6 @@ const viewDefect = (defectId) => {
   gap: 0.5rem;
 }
 
-.edit-button,
-.delete-button {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 0;
-  border: none;
-  font-size: 1.1rem;
-}
 
 .edit-button {
   background: #bee3f8;

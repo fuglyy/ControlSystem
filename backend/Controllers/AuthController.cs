@@ -39,8 +39,38 @@ public class AuthController : ControllerBase {
         };
         return Ok(userDto); 
     }
-    
-    // ... (Login и GenerateJwtToken остаются без изменений) ...
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest req)
+    {
+        var user = await _userService.GetByUsernameAsync(req.Username);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
+            return Unauthorized();
+
+        var token = GenerateJwtToken(user);
+        return Ok(new { token });
+    }
+
+    private string GenerateJwtToken(User user)
+    {
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expires = DateTime.UtcNow.AddDays(7);
+
+        var token = new JwtSecurityToken(
+            _config["Jwt:Issuer"],
+            _config["Jwt:Audience"],
+            claims,
+            expires: expires,
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }
 
 public record RegisterRequest(string Username, string Password, string? Role);

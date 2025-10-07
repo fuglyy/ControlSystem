@@ -58,7 +58,7 @@
             <span class="meta-icon">📂</span>
             <div class="meta-content">
               <span class="meta-label">Проект</span>
-              <span class="meta-value">{{ defect.project }}</span>
+              <span class="meta-value">{{ defect.project?.name }}</span>
             </div>
           </div>
           
@@ -176,6 +176,8 @@ import AssigneeSelector from '../components/AssigneeSelector.vue';
 const defect = ref(null)
 const isLoading = ref(true)
 const error = ref(null)
+const projects = ref([]); 
+const users = ref([]);
 
 const router = useRouter();
 const route = useRoute();
@@ -185,67 +187,47 @@ const isEditing = ref(false)
 
 
 onMounted(async () => {
-  const { id } = route.params;
+  const { id } = route.params;
 
-  // Если это режим создания, выходим (этот код вы уже исправляли)
-  if (id === 'new' || id === undefined) {
-    // ... (ваш код инициализации)
-    return;
-  }
-  
-  // Режим просмотра/редактирования: Загружаем данные
-  try {
-    const response = await axios.get(`/api/defects/${id}`);
-    const rawDefect = response.data;
-    
-    // ⭐ ИСПРАВЛЕНИЕ: Объявляем переменные let в самом начале блока try
-    let originalAssignedToId = null; 
-    let originalProjectId = null;
-    let assigneeObject = null;
-    let projectTitle = 'Не назначен'; 
-    
-    // 1. ПОИСК ИСПОЛНИТЕЛЯ
-    if (rawDefect.assignedToId) {
-      // ⭐ Теперь эта переменная уже определена
-      originalAssignedToId = rawDefect.assignedToId; 
-      assigneeObject = users.value.find(user => user.id == originalAssignedToId) || null;
-    }
+  // Если это режим создания, выходим
+  if (id === 'new' || id === undefined) {
+    // ... (ваш код инициализации)
+    return;
+  }
+  
+  // Режим просмотра/редактирования: Загружаем данные
+  try {
+  const [projectsRes, usersRes] = await Promise.all([
+      axios.get('/api/Projects'), 
+      axios.get('/api/Users') 
+    ]);
+    projects.value = projectsRes.data;
+    users.value = usersRes.data;
+    console.log('[DefectDetail] Loaded lists for selectors.');
+    const response = await axios.get(`/api/defects/${id}`);
+    const rawDefect = response.data; // Это DefectDetailDto!
 
-    // 2. ПОИСК ПРОЕКТА
-    if (rawDefect.projectId) {
-      // ⭐ Теперь эта переменная уже определена
-      originalProjectId = rawDefect.projectId; 
-      
-      const projectObject = projects.value.find(p => p.id == originalProjectId);
-      
-      if (projectObject) {
-        projectTitle = projectObject.name;
-      } else {
-        projectTitle = `ID проекта: ${originalProjectId} (Неизвестен)`; 
-      }
-    }
-    
-    // Формируем объект defect.value
-    defect.value = {
-      id: rawDefect.id,
-      title: rawDefect.title,        // 👈 ДОБАВЬТЕ ЭТО
-      description: rawDefect.description,  // 👈 ДОБАВЬТЕ ЭТО
-      priority: rawDefect.priority.toLowerCase(), // 👈 ДОБАВЬТЕ ЭТО (с преобразованием)
-      status: rawDefect.status, 
-      originalProjectId: originalProjectId, // 👈 Теперь она всегда определена (как null или ID)
-      originalAssignedToId: originalAssignedToId, // 👈 Теперь она всегда определена
-      createdAt: rawDefect.createdAt,
-      project: projectTitle, 
-      assignee: assigneeObject,
-      deadline: rawDefect.dueDate,
-    };
+    defect.value = {
+      id: rawDefect.id,
+      title: rawDefect.title, 
+      description: rawDefect.description,
+      priority: rawDefect.priority.toLowerCase(), 
+      status: rawDefect.status, 
+      project: rawDefect.project || null, // { id, name }
+      assignee: rawDefect.assignedTo || null, // { id, username, ... }
 
-  } catch (err) {
-    console.error('[DefectDetail] Load error:', err.message, err.response);
-    error.value = 'Не удалось загрузить дефект.';
-  } finally {
-    isLoading.value = false
-  }
+      deadline: rawDefect.dueDate ? new Date(rawDefect.dueDate).toISOString().split('T')[0] : null,
+
+      createdAt: rawDefect.createdAt,
+    };
+
+  } catch (err) {
+    console.error('[DefectDetail] Load error:', err.message, err.response);
+    error.value = 'Не удалось загрузить дефект.';
+  } finally {
+    isLoading.value = false
+  }
+  
 })
 
 const saveChanges = async () => {
@@ -262,7 +244,6 @@ const saveChanges = async () => {
         // ... внутри saveChanges
         const dataToSend = {
           id: id, 
-          // 1. Title и Description: Защита от undefined
           title: defect.value.title || 'Новый дефект', 
           description: defect.value.description || '',
           
@@ -270,15 +251,12 @@ const saveChanges = async () => {
           priority: defect.value.priority || 'medium', 
           status: defect.value.status || 'New',
           createdAt: defect.value.createdAt, 
-          // 3. ID (AssignedToId, ProjectId): Обеспечиваем, что это СТРОКА или null
-          // (даже если бэкенд требует число, лучше явно преобразовать)
           assignedToId: defect.value.assignee?.id ? String(defect.value.assignee.id) : null, 
-          projectId: defect.value.originalProjectId ? String(defect.value.originalProjectId) : null,
+          projectId: defect.value.project?.id ? String(defect.value.project.id) : null, 
 
-          // 4. ⭐ ДАТА: Самая важная часть! Преобразование в ISO-8601
-          dueDate: defect.value.deadline 
-              ? new Date(defect.value.deadline).toISOString() 
-              : null,
+          dueDate: defect.value.deadline 
+              ? new Date(defect.value.deadline).toISOString() 
+              : null,
           
           // 5. ID: Добавляем ID только для PUT-запроса (обновления)
           // ВАЖНО: При POST этот ID будет удален из finalDataToSend
@@ -331,22 +309,7 @@ const saveChanges = async () => {
 
 const newComment = ref('');
 
-const projects = ref([
-  { id: 1, name: 'CRM Система' },
-  { id: 2, name: 'Веб-портал' },
-  { id: 3, name: 'Мобильное приложение' },
-  { id: 4, name: 'Аналитическая система' }
-]);
 
-const users = ref([
-  { id: 1, name: 'Иван Петров', role: 'Старший инженер' },
-  { id: 2, name: 'Мария Сидорова', role: 'Инженер' },
-  { id: 3, name: 'Алексей Иванов', role: 'Младший инженер' },
-  { id: 4, name: 'Дмитрий Смирнов', role: 'Менеджер проекта' },
-  { id: 5, name: 'Екатерина Волкова', role: 'Инженер' },
-  { id: 6, name: 'Сергей Козлов', role: 'Старший инженер' },
-  { id: 7, name: 'Анна Морозова', role: 'Инженер' }
-]);
 
 const comments = ref([
   {
